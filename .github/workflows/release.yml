@@ -1,0 +1,41 @@
+name: Release
+
+# Publishing runs from CI so a release never depends on a local npm session.
+# The account uses `auth-and-writes` two-factor auth, which prompts for a one-time
+# password on every local publish; an automation token is exempt from that prompt.
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          # Writes an .npmrc that authenticates with NODE_AUTH_TOKEN.
+          registry-url: https://registry.npmjs.org
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+
+      # A tag that disagrees with the manifest would publish a version nobody asked for.
+      - name: Verify the tag matches package.json
+        run: |
+          tagged="${GITHUB_REF_NAME#v}"
+          manifest="$(node -p "require('./package.json').version")"
+          if [ "$tagged" != "$manifest" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $manifest." >&2
+            exit 1
+          fi
+          echo "Publishing $manifest from $GITHUB_REF_NAME."
+
+      - run: pnpm run check
+
+      # `check` builds dist/, which the published files list needs.
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
