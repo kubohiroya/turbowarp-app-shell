@@ -1,8 +1,9 @@
 name: Release
 
 # Publishing runs from CI so a release never depends on a local npm session.
-# The account uses `auth-and-writes` two-factor auth, which prompts for a one-time
-# password on every local publish; an automation token is exempt from that prompt.
+# Authentication uses npm trusted publishing: npm verifies this workflow's OIDC identity
+# against the trusted publisher configured for the package, so there is no token to store
+# or rotate, and no one-time password prompt. npm records build provenance automatically.
 on:
   push:
     tags:
@@ -11,13 +12,18 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Lets npm exchange this workflow's OIDC identity for publish rights.
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          # Writes an .npmrc that authenticates with NODE_AUTH_TOKEN.
           registry-url: https://registry.npmjs.org
+      # Node 22 ships npm 10, and trusted publishing needs 11.5.1 or newer.
+      - run: npm install --global npm@latest
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
 
@@ -37,5 +43,3 @@ jobs:
       # `check` builds dist/, which the published files list needs.
       - name: Publish to npm
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
