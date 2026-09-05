@@ -117,5 +117,23 @@ existing rendering while the mechanics move here:
 corepack enable
 pnpm install --frozen-lockfile
 pnpm run check
-pnpm run release:check
+```
+
+## Releasing
+
+Releases are published by hand, so a passkey can authenticate interactively:
+
+```bash
+npm login
+npm publish --access public
+```
+
+`prepare` builds `dist/` during publish, so no separate build step is needed.
+
+`pnpm run release:check` is a dry run. It prints the same `+ <name>@<version>` summary as a real
+publish while uploading nothing, so confirm a release against the registry rather than against that
+summary:
+
+```bash
+npm view @kubohiroya/turbowarp-app-shell versions
 ```

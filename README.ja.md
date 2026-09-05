@@ -116,5 +116,22 @@ indicator.show({
 corepack enable
 pnpm install --frozen-lockfile
 pnpm run check
-pnpm run release:check
+```
+
+## リリース
+
+リリースは手作業で publish します。パスキーによる対話的な認証を使うためです。
+
+```bash
+npm login
+npm publish --access public
+```
+
+`prepare` が publish 時に `dist/` をビルドするため、別途ビルド手順は不要です。
+
+`pnpm run release:check` は dry run です。実際の publish と同じ `+ <name>@<version>` の要約を出力しながら
+何もアップロードしないため、公開の確認はこの要約ではなく registry に対して行ってください。
+
+```bash
+npm view @kubohiroya/turbowarp-app-shell versions
 ```
