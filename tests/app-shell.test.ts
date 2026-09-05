@@ -393,3 +393,125 @@ describe('createAppShellSourceChooser', () => {
     expect(root.parentNode).toBe(null);
   });
 });
+
+describe('app-owned presentation injection', () => {
+  it('stamps app-owned attributes and scales the built-in close glyph', () => {
+    const document = fakeDocument();
+    const mount = fakeElement('div') as unknown as HTMLElement;
+    const controls = createAppShellTitleControls({
+      document,
+      mount,
+      locales: {en: {website: 'Website', close: 'Close'}},
+      closeIconMetrics: {size: '4.1667cqw', thickness: '.625cqw', radius: '.3125cqw'},
+      attributes: {
+        root: {'data-app-title-controls': 'true'},
+        website: {'data-app-title-action': 'website'},
+        close: {'data-app-title-action': 'close'},
+        closeIcon: {'data-app-close-icon': 'true'},
+        closeIconLine: {'data-app-close-icon-line': 'true'}
+      },
+      onWebsite() {},
+      onClose() {}
+    });
+
+    const root = controls.element as unknown as FakeElement;
+    expect(root.getAttribute('data-app-title-controls')).toBe('true');
+    expect(findByAttribute(root, 'data-app-title-action', 'website')).toHaveLength(1);
+    const icon = findByAttribute(root, 'data-app-close-icon', 'true')[0]!;
+    const lines = findByAttribute(root, 'data-app-close-icon-line', 'true');
+    expect(icon.style['cssText']).toContain('width:4.1667cqw');
+    expect(lines).toHaveLength(2);
+    for (const line of lines) {
+      expect(line.style['cssText']).toContain('width:4.1667cqw;height:.625cqw');
+      expect(line.style['cssText']).toContain('border-radius:.3125cqw');
+    }
+  });
+
+  it('keeps a text icon at its injected size and applies an icon filter', () => {
+    const document = fakeDocument();
+    const mount = fakeElement('div') as unknown as HTMLElement;
+    const controls = createAppShellTitleControls({
+      document,
+      mount,
+      locales: {en: {website: 'Website', close: 'Close'}},
+      websiteIcon: {text: '🌐', size: 'auto', fontSize: '5.5cqw'},
+      onWebsite() {},
+      onClose() {}
+    });
+    const root = controls.element as unknown as FakeElement;
+    const website = findByAttribute(root, 'data-turbowarp-app-shell-title-action', 'website')[0]!;
+    const icon = website.children[0]!;
+    expect(icon.textContent).toBe('🌐');
+    expect(icon.style['width']).toBe('auto');
+    expect(icon.style['fontSize']).toBe('5.5cqw');
+
+    const menu = createAppShellApplicationMenu({
+      document,
+      mount,
+      actions: [
+        {
+          id: 'open',
+          labels: {en: 'Open'},
+          icon: {url: 'data:image/svg+xml,<svg/>', filter: 'invert(1)'},
+          attributes: {'data-app-menu-action': 'open'},
+          position: {left: '10%', top: '58.8889%'},
+          onSelect() {}
+        }
+      ],
+      status: {text: 'ready', visible: true, color: '#004d40'},
+      attributes: {status: {'data-app-menu-status': 'true'}}
+    });
+    const menuRoot = menu.element as unknown as FakeElement;
+    const open = findByAttribute(menuRoot, 'data-app-menu-action', 'open')[0]!;
+    expect(open.style['left']).toBe('10%');
+    expect(open.style['top']).toBe('58.8889%');
+    expect(open.children[0]!.style['filter']).toBe('invert(1)');
+    const status = findByAttribute(menuRoot, 'data-app-menu-status', 'true')[0]!;
+    expect(status.style['color']).toBe('#004d40');
+
+    menu.setActionState('open', {position: {top: '18%'}});
+    expect(open.style['top']).toBe('18%');
+  });
+
+  it('centres a label-only source choice when the app asks for it', () => {
+    const document = fakeDocument();
+    const mount = fakeElement('div') as unknown as HTMLElement;
+    const chooser = createAppShellSourceChooser({
+      document,
+      mount,
+      choices: [
+        {
+          id: 'file',
+          labels: {en: 'Open file'},
+          align: 'center',
+          primary: true,
+          attributes: {'data-app-source-choice': 'file'},
+          onSelect() {}
+        }
+      ]
+    });
+    const root = chooser.element as unknown as FakeElement;
+    const button = findByAttribute(root, 'data-app-source-choice', 'file')[0]!;
+    expect(button.style['cssText']).toContain('justify-content:center;text-align:center;');
+    expect(button.style['cssText']).not.toContain('grid-template-columns');
+    chooser.show('en');
+    expect(button.style['display']).toBe('flex');
+  });
+
+  it('stamps app-owned attributes on the loading presenter', () => {
+    const document = fakeDocument();
+    const mount = fakeElement('div') as unknown as HTMLElement;
+    const presenter = createAppShellLoadingPresenter({
+      document,
+      mount,
+      attributes: {
+        root: {'data-app-loading': 'true', 'aria-hidden': 'true'},
+        backdrop: {'data-app-loading-backdrop': 'true'}
+      }
+    });
+    const root = presenter.element as unknown as FakeElement;
+    expect(root.getAttribute('data-app-loading')).toBe('true');
+    expect(root.getAttribute('aria-hidden')).toBe('true');
+    expect(findByAttribute(root, 'data-app-loading-backdrop', 'true')).toHaveLength(1);
+  });
+});

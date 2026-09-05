@@ -98,6 +98,18 @@ indicator.show({
 - `tm-kamishibai` can replace local title/menu/loading/source chooser DOM mechanics by mapping its existing labels, icons, callbacks, and availability state into these factories. Keep DSL diagnostics, story source validation, source excerpts, and return-to-menu behavior in `tm-kamishibai`.
 - `tm-3d-app` can compose the same primitives with 3D/AR-specific labels and source actions without importing Kamishibai story modules.
 - Use the built-in `data-turbowarp-app-shell-*` attributes for broad fixture assertions. Use `rootTestId`, action `testId`, and choice `testId` only when a consuming app needs stable app-owned selectors.
+- An app that already ships its own selectors can keep them by passing `attributes` instead of renaming its fixtures. Every factory accepts per-part attribute maps, applied after the built-in attributes, so an app can also override an ARIA attribute it owns.
+
+## App-owned presentation
+
+The package owns layout mechanics, not an app's visual identity. These options let an app keep its
+existing rendering while the mechanics move here:
+
+- `AppShellIcon` carries `filter`, `size`, and `fontSize`, so an app can recolour a monochrome source asset or keep a text glyph at its own size.
+- An application menu action accepts an absolute `position`, and `setActionState` can move it, so an app owns its menu layout instead of the default two-column flow.
+- `AppShellApplicationMenuStatus.color` overrides the tone palette for an app-owned status row.
+- `closeIconMetrics` scales the built-in close glyph with the stage instead of the 20px default.
+- A source choice can set `align: 'center'` for a label-only button.
 
 ## Development
 

@@ -30,12 +30,36 @@ export interface RuntimeMessage {
 export interface AppShellIcon {
   url?: string;
   text?: string;
+  /** CSS `filter` applied to the rendered icon, e.g. to recolor a monochrome source asset. */
+  filter?: string;
+  /** CSS length used for the icon box. Pass `auto` to let a text icon size itself. */
+  size?: string;
+  /** CSS length used for a text icon glyph. */
+  fontSize?: string;
 }
 
 export interface AppShellActionState {
   enabled?: boolean;
   visible?: boolean;
 }
+
+/** Absolute placement override for a shell control inside its container-query root. */
+export interface AppShellRect {
+  left?: string;
+  top?: string;
+  width?: string;
+  height?: string;
+}
+
+/** Geometry of the built-in close glyph, so an app can scale it with its stage. */
+export interface AppShellCloseIconMetrics {
+  size?: string;
+  thickness?: string;
+  radius?: string;
+}
+
+/** App-owned DOM attributes stamped onto a shell element after the built-in ones. */
+export type AppShellAttributes = Readonly<Record<string, string>>;
 
 export interface AppShellTitleControlLabels {
   website: string;
@@ -58,6 +82,14 @@ export interface AppShellTitleControlsOptions {
   websiteTestId?: string;
   closeTestId?: string;
   rootTestId?: string;
+  closeIconMetrics?: AppShellCloseIconMetrics;
+  attributes?: {
+    root?: AppShellAttributes;
+    website?: AppShellAttributes;
+    close?: AppShellAttributes;
+    closeIcon?: AppShellAttributes;
+    closeIconLine?: AppShellAttributes;
+  };
   onWebsite(): unknown | Promise<unknown>;
   onClose(): unknown | Promise<unknown>;
   onError?(error: unknown): unknown;
@@ -70,6 +102,9 @@ export interface AppShellApplicationMenuAction {
   enabled?: boolean;
   visible?: boolean;
   testId?: string;
+  /** Overrides the default two-column placement for this action. */
+  position?: AppShellRect;
+  attributes?: AppShellAttributes;
   onSelect(): unknown | Promise<unknown>;
 }
 
@@ -77,11 +112,14 @@ export interface AppShellApplicationMenuStatus {
   text?: string;
   visible?: boolean;
   tone?: 'neutral' | 'info' | 'warning' | 'error';
+  /** Overrides the tone colour when the app owns its status palette. */
+  color?: string;
 }
 
 export interface AppShellApplicationMenuActionState extends AppShellActionState {
   labels?: Readonly<Record<string, string>>;
   icon?: AppShellIcon;
+  position?: AppShellRect;
 }
 
 export interface AppShellApplicationMenuOptions {
@@ -94,6 +132,7 @@ export interface AppShellApplicationMenuOptions {
   status?: AppShellApplicationMenuStatus;
   rootTestId?: string;
   statusTestId?: string;
+  attributes?: {root?: AppShellAttributes; status?: AppShellAttributes};
   onError?(error: unknown): unknown;
 }
 
@@ -112,6 +151,13 @@ export interface AppShellLoadingPresenterOptions {
   ariaLabel?: string;
   rootTestId?: string;
   initialState?: AppShellLoadingState;
+  attributes?: {
+    root?: AppShellAttributes;
+    backdrop?: AppShellAttributes;
+    frame?: AppShellAttributes;
+    label?: AppShellAttributes;
+    progress?: AppShellAttributes;
+  };
 }
 
 export interface AppShellSourceChoice {
@@ -123,6 +169,9 @@ export interface AppShellSourceChoice {
   visible?: boolean;
   primary?: boolean;
   testId?: string;
+  /** `start` keeps the icon/label/description grid, `center` centres a label-only button. */
+  align?: 'start' | 'center';
+  attributes?: AppShellAttributes;
   onSelect(): unknown | Promise<unknown>;
 }
 
@@ -142,6 +191,11 @@ export interface AppShellSourceChooserOptions {
   introLabels?: Readonly<Record<string, string>>;
   rootTestId?: string;
   panelTestId?: string;
+  attributes?: {
+    root?: AppShellAttributes;
+    panel?: AppShellAttributes;
+    intro?: AppShellAttributes;
+  };
   onError?(error: unknown): unknown;
 }
 
@@ -255,12 +309,71 @@ function requireIcon(value: unknown, name: string): AppShellIcon | undefined {
   if (!isRecord(value)) throw new TypeError(`${name} must be an object.`);
   const url = optionalString(value['url'], `${name}.url`);
   const text = optionalString(value['text'], `${name}.text`);
+  const filter = optionalString(value['filter'], `${name}.filter`);
+  const size = optionalString(value['size'], `${name}.size`);
+  const fontSize = optionalString(value['fontSize'], `${name}.fontSize`);
   if ((url === undefined || url.length === 0) && (text === undefined || text.length === 0)) {
     throw new TypeError(`${name} must include a non-empty url or text.`);
   }
   return {
     ...(url === undefined ? {} : {url}),
-    ...(text === undefined ? {} : {text})
+    ...(text === undefined ? {} : {text}),
+    ...(filter === undefined ? {} : {filter}),
+    ...(size === undefined ? {} : {size}),
+    ...(fontSize === undefined ? {} : {fontSize})
+  };
+}
+
+function requireAttributes(value: unknown, name: string): AppShellAttributes | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) throw new TypeError(`${name} must be an object.`);
+  for (const [attribute, attributeValue] of Object.entries(value)) {
+    if (attribute.length === 0) throw new TypeError(`${name} names must be non-empty.`);
+    if (typeof attributeValue !== 'string') {
+      throw new TypeError(`${name}.${attribute} must be a string.`);
+    }
+  }
+  return value as AppShellAttributes;
+}
+
+function applyAttributes(element: HTMLElement, attributes: AppShellAttributes | undefined) {
+  if (attributes === undefined) return;
+  for (const [name, value] of Object.entries(attributes)) element.setAttribute(name, value);
+}
+
+function requireRect(value: unknown, name: string): AppShellRect | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) throw new TypeError(`${name} must be an object.`);
+  const left = optionalString(value['left'], `${name}.left`);
+  const top = optionalString(value['top'], `${name}.top`);
+  const width = optionalString(value['width'], `${name}.width`);
+  const height = optionalString(value['height'], `${name}.height`);
+  return {
+    ...(left === undefined ? {} : {left}),
+    ...(top === undefined ? {} : {top}),
+    ...(width === undefined ? {} : {width}),
+    ...(height === undefined ? {} : {height})
+  };
+}
+
+function applyRect(element: HTMLElement, rect: AppShellRect | undefined) {
+  if (rect === undefined) return;
+  if (rect.left !== undefined) element.style.left = rect.left;
+  if (rect.top !== undefined) element.style.top = rect.top;
+  if (rect.width !== undefined) element.style.width = rect.width;
+  if (rect.height !== undefined) element.style.height = rect.height;
+}
+
+function requireCloseIconMetrics(value: unknown): AppShellCloseIconMetrics | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) throw new TypeError('closeIconMetrics must be an object.');
+  const size = optionalString(value['size'], 'closeIconMetrics.size');
+  const thickness = optionalString(value['thickness'], 'closeIconMetrics.thickness');
+  const radius = optionalString(value['radius'], 'closeIconMetrics.radius');
+  return {
+    ...(size === undefined ? {} : {size}),
+    ...(thickness === undefined ? {} : {thickness}),
+    ...(radius === undefined ? {} : {radius})
   };
 }
 
@@ -279,10 +392,11 @@ function applyTestId(element: HTMLElement, testId: string | undefined) {
 function restoreableMountPosition(document: Document, mount: HTMLElement): (() => void) | null {
   if (mount === document.body) return null;
   const previous = mount.style.position;
-  if (previous === '' || previous === 'static') {
+  // A DOM stub can report an unset position as undefined rather than the empty string.
+  if (previous === undefined || previous === '' || previous === 'static') {
     mount.style.position = 'relative';
     return () => {
-      mount.style.position = previous;
+      mount.style.position = previous ?? '';
     };
   }
   return null;
@@ -333,6 +447,12 @@ function renderIcon(element: HTMLElement, icon: AppShellIcon | undefined) {
   element.style.backgroundImage = '';
   element.style.display = icon === undefined ? 'none' : 'inline-flex';
   if (icon === undefined) return;
+  element.style.filter = icon.filter ?? '';
+  if (icon.size !== undefined) {
+    element.style.width = icon.size;
+    element.style.height = icon.size;
+  }
+  if (icon.fontSize !== undefined) element.style.fontSize = icon.fontSize;
   if (icon.url !== undefined) {
     element.style.backgroundImage = iconCssUrl(icon.url);
     element.style.backgroundPosition = 'center';
@@ -343,14 +463,22 @@ function renderIcon(element: HTMLElement, icon: AppShellIcon | undefined) {
   element.textContent = icon.text ?? '';
 }
 
-function appendDefaultCloseIcon(document: Document, icon: HTMLElement) {
+function appendDefaultCloseIcon(
+  document: Document,
+  icon: HTMLElement,
+  metrics: AppShellCloseIconMetrics | undefined,
+  lineAttributes: AppShellAttributes | undefined
+) {
+  const size = metrics?.size ?? '20px';
+  const thickness = metrics?.thickness ?? '3px';
+  const radius = metrics?.radius ?? '2px';
   icon.textContent = '';
-  icon.style.cssText =
-    'position:relative;display:block;width:20px;height:20px;pointer-events:none;flex:0 0 auto;';
+  icon.style.cssText = `position:relative;display:block;width:${size};height:${size};pointer-events:none;flex:0 0 auto;`;
   for (const rotation of ['45deg', '-45deg']) {
     const line = document.createElement('span');
     line.setAttribute('data-turbowarp-app-shell-close-icon-line', 'true');
-    line.style.cssText = `position:absolute;left:50%;top:50%;display:block;width:20px;height:3px;border-radius:2px;background:currentColor;transform:translate(-50%,-50%) rotate(${rotation});transform-origin:center;`;
+    line.style.cssText = `position:absolute;left:50%;top:50%;display:block;width:${size};height:${thickness};border-radius:${radius};background:currentColor;transform:translate(-50%,-50%) rotate(${rotation});transform-origin:center;`;
+    applyAttributes(line, lineAttributes);
     icon.appendChild(line);
   }
 }
@@ -395,6 +523,17 @@ export function createAppShellTitleControls(options: AppShellTitleControlsOption
   const rootTestId = requireTestId(options.rootTestId, 'rootTestId');
   const websiteTestId = requireTestId(options.websiteTestId, 'websiteTestId');
   const closeTestId = requireTestId(options.closeTestId, 'closeTestId');
+  const closeIconMetrics = requireCloseIconMetrics(options.closeIconMetrics);
+  const attributes = options.attributes ?? {};
+  if (!isRecord(attributes)) throw new TypeError('attributes must be an object.');
+  const rootAttributes = requireAttributes(attributes.root, 'attributes.root');
+  const websiteAttributes = requireAttributes(attributes.website, 'attributes.website');
+  const closeAttributes = requireAttributes(attributes.close, 'attributes.close');
+  const closeIconAttributes = requireAttributes(attributes.closeIcon, 'attributes.closeIcon');
+  const closeIconLineAttributes = requireAttributes(
+    attributes.closeIconLine,
+    'attributes.closeIconLine'
+  );
 
   const root = document.createElement('section');
   const website = document.createElement('button');
@@ -410,6 +549,7 @@ export function createAppShellTitleControls(options: AppShellTitleControlsOption
   root.style.position = 'absolute';
   root.style.display = 'none';
   applyTestId(root, rootTestId);
+  applyAttributes(root, rootAttributes);
 
   website.type = 'button';
   website.setAttribute('data-turbowarp-app-shell-title-action', 'website');
@@ -417,6 +557,7 @@ export function createAppShellTitleControls(options: AppShellTitleControlsOption
     'position:absolute;left:33.3333%;top:25.5556%;width:33.3333%;height:17.7778%;display:flex;align-items:center;justify-content:center;gap:5%;box-sizing:border-box;border:.4167cqw solid #005f50;border-radius:2.5cqw;background:#007d66;color:#fff;box-shadow:0 .625cqw 1.6667cqw rgba(0,0,0,.2);cursor:pointer;pointer-events:auto;font:inherit;';
   website.style.cursor = 'pointer';
   applyTestId(website, websiteTestId);
+  applyAttributes(website, websiteAttributes);
   websiteIconElement.setAttribute('aria-hidden', 'true');
   websiteIconElement.style.cssText =
     'display:inline-flex;width:10cqw;height:10cqw;align-items:center;justify-content:center;line-height:1;font-size:5.5cqw;';
@@ -430,11 +571,13 @@ export function createAppShellTitleControls(options: AppShellTitleControlsOption
     'position:absolute;left:92.5%;top:1.1111%;width:6.6667%;height:8.8889%;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:.2083cqw solid #005f50;border-radius:50%;background:#007d66;color:#fff;box-shadow:0 .4167cqw 1.25cqw rgba(0,0,0,.2);cursor:pointer;pointer-events:auto;padding:0;';
   close.style.cursor = 'pointer';
   applyTestId(close, closeTestId);
+  applyAttributes(close, closeAttributes);
   closeIconElement.setAttribute('data-turbowarp-app-shell-close-icon', 'true');
   closeIconElement.setAttribute('aria-hidden', 'true');
   if (closeIcon === undefined) {
-    appendDefaultCloseIcon(document, closeIconElement);
+    appendDefaultCloseIcon(document, closeIconElement, closeIconMetrics, closeIconLineAttributes);
   }
+  applyAttributes(closeIconElement, closeIconAttributes);
   close.appendChild(closeIconElement);
 
   root.appendChild(website);
@@ -532,6 +675,10 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
   const fallbackLocale = optionalString(options.fallbackLocale, 'fallbackLocale');
   const rootTestId = requireTestId(options.rootTestId, 'rootTestId');
   const statusTestId = requireTestId(options.statusTestId, 'statusTestId');
+  const menuAttributes = options.attributes ?? {};
+  if (!isRecord(menuAttributes)) throw new TypeError('attributes must be an object.');
+  const rootAttributes = requireAttributes(menuAttributes.root, 'attributes.root');
+  const statusAttributes = requireAttributes(menuAttributes.status, 'attributes.status');
   const root = document.createElement('section');
   const status = document.createElement('p');
   const restoreMountPosition = restoreableMountPosition(document, mount);
@@ -544,6 +691,7 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
   root.style.display = 'none';
   root.style.cursor = 'pointer';
   applyTestId(root, rootTestId);
+  applyAttributes(root, rootAttributes);
 
   status.setAttribute('data-turbowarp-app-shell-menu-status', 'true');
   status.setAttribute('role', 'status');
@@ -551,6 +699,7 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
   status.style.cssText =
     'position:absolute;left:10%;top:93%;width:80%;margin:0;color:#35524c;font-size:2.7cqw;line-height:1.1;text-align:center;';
   applyTestId(status, statusTestId);
+  applyAttributes(status, statusAttributes);
 
   type MenuButtonRecord = {
     button: HTMLButtonElement;
@@ -560,6 +709,7 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
     iconDefinition: AppShellIcon | undefined;
     enabled: boolean;
     visible: boolean;
+    position: AppShellRect | undefined;
     onSelect: () => unknown | Promise<unknown>;
     onClick: (event: Event) => void;
   };
@@ -577,6 +727,11 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
     const enabled = optionalBoolean(definition.enabled, `actions.${index}.enabled`, true);
     const visible = optionalBoolean(definition.visible, `actions.${index}.visible`, true);
     const testId = requireTestId(definition.testId, `actions.${index}.testId`);
+    const position = requireRect(definition.position, `actions.${index}.position`);
+    const actionAttributes = requireAttributes(
+      definition.attributes,
+      `actions.${index}.attributes`
+    );
     if (typeof definition.onSelect !== 'function') {
       throw new TypeError(`actions.${index}.onSelect must be a function.`);
     }
@@ -591,6 +746,7 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
     button.style.cssText = `position:absolute;left:${column === 0 ? '10%' : '53.3333%'};top:${25.5556 + row * 30}%;width:36.6667%;height:24.4444%;display:flex;min-width:0;min-height:0;align-items:center;justify-content:center;flex-direction:column;gap:.4167cqw;border:.4167cqw solid #005f50;border-radius:2.9167cqw;background:#007d66;color:#fff;box-shadow:0 .625cqw 1.6667cqw rgba(0,0,0,.2);cursor:pointer;font:inherit;`;
     button.style.cursor = 'pointer';
     applyTestId(button, testId);
+    applyAttributes(button, actionAttributes);
     iconElement.setAttribute('aria-hidden', 'true');
     iconElement.style.cssText =
       'display:inline-flex;width:10cqw;height:10cqw;align-items:center;justify-content:center;line-height:1;font-size:6cqw;';
@@ -612,6 +768,7 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
       iconDefinition: icon,
       enabled,
       visible,
+      position,
       onSelect,
       onClick
     });
@@ -624,11 +781,13 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
     text: string;
     visible: boolean;
     tone: 'neutral' | 'info' | 'warning' | 'error';
+    color: string | undefined;
   };
   let statusState: MenuStatusState = {
     text: options.status?.text ?? '',
     visible: options.status?.visible ?? false,
-    tone: options.status?.tone ?? 'neutral'
+    tone: options.status?.tone ?? 'neutral',
+    color: optionalString(options.status?.color, 'status.color')
   };
   if (typeof statusState.text !== 'string') throw new TypeError('status.text must be a string.');
   if (typeof statusState.visible !== 'boolean') throw new TypeError('status.visible must be a boolean.');
@@ -646,9 +805,10 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
       setButtonEnabled(value.button, value.enabled);
       setElementVisible(value.button, value.visible, 'flex');
       value.button.style.boxShadow = value.enabled ? '0 .625cqw 1.6667cqw rgba(0,0,0,.2)' : 'none';
+      applyRect(value.button, value.position);
     }
     status.textContent = boundedText(statusState.text, 500);
-    status.style.color = loadingTone(statusState.tone);
+    status.style.color = statusState.color ?? loadingTone(statusState.tone);
     setElementVisible(status, statusState.visible && statusState.text.length > 0, 'block');
   }
 
@@ -693,6 +853,9 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
       if (state.icon !== undefined) {
         action.iconDefinition = requireIcon(state.icon, 'action state icon');
       }
+      if (state.position !== undefined) {
+        action.position = requireRect(state.position, 'action state position');
+      }
       renderMenu();
     },
     setStatus(nextStatus: AppShellApplicationMenuStatus) {
@@ -706,7 +869,8 @@ export function createAppShellApplicationMenu(options: AppShellApplicationMenuOp
       statusState = {
         text: optionalString(nextStatus['text'], 'status.text') ?? statusState.text,
         visible: optionalBoolean(nextStatus['visible'], 'status.visible', statusState.visible),
-        tone: nextTone
+        tone: nextTone,
+        color: optionalString(nextStatus['color'], 'status.color') ?? statusState.color
       };
       renderMenu();
     },
@@ -735,6 +899,8 @@ export function createAppShellLoadingPresenter(options: AppShellLoadingPresenter
     throw new TypeError('frameMilliseconds must be positive.');
   }
   const rootTestId = requireTestId(options.rootTestId, 'rootTestId');
+  const loadingAttributes = options.attributes ?? {};
+  if (!isRecord(loadingAttributes)) throw new TypeError('attributes must be an object.');
   const root = document.createElement('section');
   const backdrop = document.createElement('img');
   const frame = document.createElement('img');
@@ -765,6 +931,11 @@ export function createAppShellLoadingPresenter(options: AppShellLoadingPresenter
   progress.max = 1;
   progress.style.cssText =
     'position:absolute;left:16%;right:16%;bottom:6%;width:68%;height:12px;display:none;';
+  applyAttributes(root, requireAttributes(loadingAttributes.root, 'attributes.root'));
+  applyAttributes(backdrop, requireAttributes(loadingAttributes.backdrop, 'attributes.backdrop'));
+  applyAttributes(frame, requireAttributes(loadingAttributes.frame, 'attributes.frame'));
+  applyAttributes(label, requireAttributes(loadingAttributes.label, 'attributes.label'));
+  applyAttributes(progress, requireAttributes(loadingAttributes.progress, 'attributes.progress'));
   root.appendChild(backdrop);
   root.appendChild(frame);
   root.appendChild(label);
@@ -856,6 +1027,8 @@ export function createAppShellSourceChooser(options: AppShellSourceChooserOption
   const fallbackLocale = optionalString(options.fallbackLocale, 'fallbackLocale');
   const rootTestId = requireTestId(options.rootTestId, 'rootTestId');
   const panelTestId = requireTestId(options.panelTestId, 'panelTestId');
+  const chooserAttributes = options.attributes ?? {};
+  if (!isRecord(chooserAttributes)) throw new TypeError('attributes must be an object.');
   const root = document.createElement('section');
   const panel = document.createElement('div');
   const intro = document.createElement('p');
@@ -870,11 +1043,14 @@ export function createAppShellSourceChooser(options: AppShellSourceChooserOption
   root.style.position = 'absolute';
   root.style.display = 'none';
   applyTestId(root, rootTestId);
+  applyAttributes(root, requireAttributes(chooserAttributes.root, 'attributes.root'));
   panel.style.cssText =
     'display:grid;width:min(75cqw,560px);gap:2.4cqw;padding:4cqw;box-sizing:border-box;border:.4cqw solid #005f50;border-radius:2.5cqw;background:#f4fffc;box-shadow:0 1.2cqw 3cqw rgba(0,0,0,.35);';
   applyTestId(panel, panelTestId);
+  applyAttributes(panel, requireAttributes(chooserAttributes.panel, 'attributes.panel'));
   intro.setAttribute('data-turbowarp-app-shell-source-intro', 'true');
   intro.style.cssText = 'margin:0;color:#263330;font-size:3cqw;line-height:1.25;text-align:center;';
+  applyAttributes(intro, requireAttributes(chooserAttributes.intro, 'attributes.intro'));
   panel.appendChild(intro);
 
   type ChoiceRecord = {
@@ -887,6 +1063,7 @@ export function createAppShellSourceChooser(options: AppShellSourceChooserOption
     iconDefinition: AppShellIcon | undefined;
     enabled: boolean;
     visible: boolean;
+    display: string;
     onSelect: () => unknown | Promise<unknown>;
     onClick: (event: Event) => void;
   };
@@ -909,6 +1086,14 @@ export function createAppShellSourceChooser(options: AppShellSourceChooserOption
     const visible = optionalBoolean(definition.visible, `choices.${index}.visible`, true);
     const primary = optionalBoolean(definition.primary, `choices.${index}.primary`, false);
     const testId = requireTestId(definition.testId, `choices.${index}.testId`);
+    const align = definition.align ?? 'start';
+    if (align !== 'start' && align !== 'center') {
+      throw new TypeError(`choices.${index}.align must be start or center.`);
+    }
+    const choiceAttributes = requireAttributes(
+      definition.attributes,
+      `choices.${index}.attributes`
+    );
     if (typeof definition.onSelect !== 'function') {
       throw new TypeError(`choices.${index}.onSelect must be a function.`);
     }
@@ -917,16 +1102,23 @@ export function createAppShellSourceChooser(options: AppShellSourceChooserOption
     const iconElement = document.createElement('span');
     const label = document.createElement('span');
     const description = document.createElement('span');
+    const layout =
+      align === 'center'
+        ? 'display:flex;gap:.8cqw;align-items:center;justify-content:center;text-align:center;'
+        : 'display:grid;grid-template-columns:auto 1fr;gap:.8cqw;align-items:center;text-align:left;';
     button.type = 'button';
     button.setAttribute('data-turbowarp-app-shell-source-choice', id);
     button.style.cssText = primary
-      ? 'min-height:9cqw;padding:1.6cqw 2cqw;border:.3cqw solid #005f50;border-radius:1.5cqw;background:#007d66;color:#fff;font:inherit;font-size:3.4cqw;font-weight:700;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:.8cqw;align-items:center;text-align:left;'
-      : 'min-height:7cqw;padding:1.3cqw 2cqw;border:.3cqw solid #52605d;border-radius:1.3cqw;background:#fff;color:#263330;font:inherit;font-size:3cqw;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:.8cqw;align-items:center;text-align:left;';
+      ? `min-height:9cqw;padding:1.6cqw 2cqw;border:.3cqw solid #005f50;border-radius:1.5cqw;background:#007d66;color:#fff;font:inherit;font-size:3.4cqw;font-weight:700;cursor:pointer;${layout}`
+      : `min-height:7cqw;padding:1.3cqw 2cqw;border:.3cqw solid #52605d;border-radius:1.3cqw;background:#fff;color:#263330;font:inherit;font-size:3cqw;cursor:pointer;${layout}`;
     button.style.cursor = 'pointer';
     applyTestId(button, testId);
+    applyAttributes(button, choiceAttributes);
     iconElement.setAttribute('aria-hidden', 'true');
     iconElement.style.cssText =
-      'display:inline-flex;width:6cqw;height:6cqw;align-items:center;justify-content:center;line-height:1;font-size:4.8cqw;grid-row:1 / span 2;';
+      align === 'center'
+        ? 'display:inline-flex;width:6cqw;height:6cqw;align-items:center;justify-content:center;line-height:1;font-size:4.8cqw;'
+        : 'display:inline-flex;width:6cqw;height:6cqw;align-items:center;justify-content:center;line-height:1;font-size:4.8cqw;grid-row:1 / span 2;';
     label.style.cssText = 'display:block;line-height:1.15;';
     description.style.cssText = 'display:block;line-height:1.2;font-size:80%;opacity:.78;font-weight:400;';
     button.appendChild(iconElement);
@@ -949,6 +1141,7 @@ export function createAppShellSourceChooser(options: AppShellSourceChooserOption
       iconDefinition: icon,
       enabled,
       visible,
+      display: align === 'center' ? 'flex' : 'grid',
       onSelect,
       onClick
     });
@@ -987,7 +1180,7 @@ export function createAppShellSourceChooser(options: AppShellSourceChooserOption
       }
       renderIcon(value.icon, value.iconDefinition);
       setButtonEnabled(value.button, value.enabled);
-      setElementVisible(value.button, value.visible, 'grid');
+      setElementVisible(value.button, value.visible, value.display);
     }
   }
 

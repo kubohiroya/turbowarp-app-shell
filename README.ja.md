@@ -98,6 +98,17 @@ indicator.show({
 - `tm-kamishibai` は、既存の label、icon、callback、availability state をこれらの factory に渡すことで、local な title/menu/loading/source chooser DOM mechanics を置き換えられます。DSL diagnostics、story source validation、source excerpt、return-to-menu behavior は `tm-kamishibai` 側に残します。
 - `tm-3d-app` は、Kamishibai story module を import せずに、3D/AR 用の label と source action を渡して同じ primitive を構成できます。
 - fixture test では標準の `data-turbowarp-app-shell-*` 属性を使えます。consuming app 固有の安定 selector が必要な場合のみ、`rootTestId`、action `testId`、choice `testId` を渡してください。
+- 既に独自 selector を持つ app は、fixture を書き換える代わりに `attributes` を渡してそのまま維持できます。各 factory は part ごとの attribute map を受け取り、標準 attribute の後に適用するため、app が所有する ARIA attribute の上書きもできます。
+
+## App 側が所有する表示
+
+本 package が所有するのは layout mechanics であり、app の視覚的な identity ではありません。以下の option により、mechanics を本 package へ移しても app 側の既存の見た目を維持できます。
+
+- `AppShellIcon` は `filter`、`size`、`fontSize` を持ちます。単色 source asset の recolour や、text glyph を app 独自のサイズで表示できます。
+- application menu の action は絶対 `position` を受け取り、`setActionState` で移動できます。標準の 2 列 layout ではなく app 側が menu layout を所有できます。
+- `AppShellApplicationMenuStatus.color` は、app が所有する status 行の色を tone palette より優先します。
+- `closeIconMetrics` は、標準の 20px ではなく stage に追従する close glyph の寸法を指定します。
+- source choice は label だけの button 用に `align: 'center'` を指定できます。
 
 ## 開発
 
