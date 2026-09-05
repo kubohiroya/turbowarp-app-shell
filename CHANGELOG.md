@@ -14,6 +14,7 @@
 - Let title controls scale the built-in close glyph through `closeIconMetrics`.
 - Let a source choice pick `align: 'center'` for a label-only button.
 - Treat an undefined `mount.style.position` as unset, so DOM stubs restore the mount correctly.
+- Build `dist/` from a `prepare` script, so the package is usable when installed from a git ref.
 
 ## 0.1.0
 
