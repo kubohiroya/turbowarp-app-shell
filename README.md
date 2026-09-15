@@ -96,7 +96,7 @@ indicator.show({
 ## Migration Notes
 
 - `tm-kamishibai` can replace local title/menu/loading/source chooser DOM mechanics by mapping its existing labels, icons, callbacks, and availability state into these factories. Keep DSL diagnostics, story source validation, source excerpts, and return-to-menu behavior in `tm-kamishibai`.
-- `tm-3d-app` can compose the same primitives with 3D/AR-specific labels and source actions without importing Kamishibai story modules.
+- Applications using the `turbowarp-3d-scene-dsl` domain library can compose the same primitives with 3D/AR-specific labels and source actions without importing Kamishibai story modules.
 - Use the built-in `data-turbowarp-app-shell-*` attributes for broad fixture assertions. Use `rootTestId`, action `testId`, and choice `testId` only when a consuming app needs stable app-owned selectors.
 - An app that already ships its own selectors can keep them by passing `attributes` instead of renaming its fixtures. Every factory accepts per-part attribute maps, applied after the built-in attributes, so an app can also override an ARIA attribute it owns.
 
