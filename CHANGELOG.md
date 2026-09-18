@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.2.1
+
 - Keep every application menu action on the stage. The default layout placed actions in two
   columns 30% apart, so a fifth action already ran past the bottom and a ninth was out of reach
   (the root clips its overflow). Up to four actions keep the layout they had; more actions get
