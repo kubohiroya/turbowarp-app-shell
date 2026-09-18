@@ -122,18 +122,44 @@ pnpm run check
 
 ## Releasing
 
-Releases are published by hand, so a passkey can authenticate interactively:
+A release is cut by pushing a tag. `.github/workflows/release.yml` runs on any `v*` tag and:
+
+1. runs `pnpm run check`;
+2. stops unless the tag names the `package.json` version (`v0.2.1` for `0.2.1`);
+3. creates the GitHub Release;
+4. publishes to npm with provenance, through trusted publishing.
+
+So a release is a version bump merged into `main`, then its tag:
+
+```bash
+git fetch origin
+git tag v0.2.2 origin/main
+git push origin v0.2.2
+```
+
+The repository holds no npm token. npm accepts the publish because the package's trusted publisher on
+npmjs.com names this workflow: GitHub Actions, `kubohiroya` / `turbowarp-app-shell`, workflow
+filename `release.yml`, no environment. If that entry is missing or differs, the publish step fails
+with `403 … OIDC permission denied`, after the GitHub Release has already been created. Correct the
+entry and re-run the failed job; the tag does not need to move:
+
+```bash
+gh run rerun <run-id> --failed
+```
+
+`prepare` builds `dist/` during publish, so no separate build step is needed.
+
+When the workflow cannot publish, a release can still be published by hand from the tagged commit,
+authenticating interactively with a passkey:
 
 ```bash
 npm login
 npm publish --access public
 ```
 
-`prepare` builds `dist/` during publish, so no separate build step is needed.
-
 `pnpm run release:check` is a dry run. It prints the same `+ <name>@<version>` summary as a real
-publish while uploading nothing, so confirm a release against the registry rather than against that
-summary:
+publish while uploading nothing. The registry can also take a few minutes to list a new version. So
+confirm a release against the registry rather than against that summary:
 
 ```bash
 npm view @kubohiroya/turbowarp-app-shell versions

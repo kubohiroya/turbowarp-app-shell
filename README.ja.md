@@ -121,17 +121,44 @@ pnpm run check
 
 ## リリース
 
-リリースは手作業で publish します。パスキーによる対話的な認証を使うためです。
+リリースはタグの push で行います。`.github/workflows/release.yml` が `v*` のタグで動き、次の順に処理します。
+
+1. `pnpm run check` を実行します。
+2. タグが `package.json` の版（`0.2.1` なら `v0.2.1`）を指していなければ止まります。
+3. GitHub Release を作ります。
+4. Trusted Publishing を使い、provenance 付きで npm へ publish します。
+
+したがってリリースは、版を上げた変更を `main` にマージし、そのタグを push する手順になります。
+
+```bash
+git fetch origin
+git tag v0.2.2 origin/main
+git push origin v0.2.2
+```
+
+リポジトリは npm のトークンを持ちません。npm が publish を受け付けるのは、npmjs.com 上のこの package の
+Trusted Publisher にこの workflow が登録されているからです。登録内容は GitHub Actions、`kubohiroya` /
+`turbowarp-app-shell`、workflow filename `release.yml`、environment なしです。登録がないか内容が違うと、
+GitHub Release を作った後の publish で `403 … OIDC permission denied` になって失敗します。登録を直したら、
+失敗したジョブだけを再実行します。タグを付け直す必要はありません。
+
+```bash
+gh run rerun <run-id> --failed
+```
+
+`prepare` が publish 時に `dist/` をビルドするため、別途ビルド手順は不要です。
+
+workflow から publish できないときは、タグの commit から手作業で publish することもできます。認証は
+パスキーで対話的に行います。
 
 ```bash
 npm login
 npm publish --access public
 ```
 
-`prepare` が publish 時に `dist/` をビルドするため、別途ビルド手順は不要です。
-
-`pnpm run release:check` は dry run です。実際の publish と同じ `+ <name>@<version>` の要約を出力しながら
-何もアップロードしないため、公開の確認はこの要約ではなく registry に対して行ってください。
+`pnpm run release:check` は dry run です。実際の publish と同じ `+ <name>@<version>` の要約を出力しますが、
+何もアップロードしません。また、registry が新しい版を返すまで数分かかることがあります。公開の確認は
+この要約ではなく registry に対して行ってください。
 
 ```bash
 npm view @kubohiroya/turbowarp-app-shell versions
