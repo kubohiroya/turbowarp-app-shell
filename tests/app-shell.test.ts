@@ -291,6 +291,75 @@ describe('createAppShellApplicationMenu', () => {
   });
 });
 
+describe('application menu layout', () => {
+  const cssValue = (element: FakeElement, name: string) =>
+    new RegExp(`(?:^|;)${name}:([^;]+)`).exec(String(element.style['cssText']))?.[1];
+  const percent = (element: FakeElement, name: string) =>
+    Number.parseFloat(cssValue(element, name) ?? 'NaN');
+
+  function menuOf(count: number) {
+    const document = fakeDocument();
+    const menu = createAppShellApplicationMenu({
+      document,
+      mount: document.body,
+      initialLocale: 'ja',
+      actions: Array.from({length: count}, (_, index) => ({
+        id: `action-${index}`,
+        labels: {en: `Action ${index}`, ja: `操作${index}`},
+        onSelect: () => undefined
+      }))
+    });
+    const root = menu.element as unknown as FakeElement;
+    return Array.from({length: count}, (_, index) =>
+      findByAttribute(root, 'data-turbowarp-app-shell-menu-action', `action-${index}`)[0]!
+    );
+  }
+
+  it('keeps the two-by-two layout for up to four actions', () => {
+    const buttons = menuOf(4);
+    expect(buttons.map((button) => [cssValue(button, 'left'), cssValue(button, 'top')])).toEqual([
+      ['10%', '25.5556%'],
+      ['53.3333%', '25.5556%'],
+      ['10%', '55.5556%'],
+      ['53.3333%', '55.5556%']
+    ]);
+    expect(cssValue(buttons[0]!, 'width')).toBe('36.6667%');
+    expect(cssValue(buttons[0]!, 'height')).toBe('24.4444%');
+    expect(cssValue(buttons[0]!.children[1]!, 'font-size')).toBe('3.8cqw');
+  });
+
+  it.each([5, 6, 9, 12, 16])('keeps all %i actions on the stage without overlapping', (count) => {
+    const buttons = menuOf(count);
+    const rects = buttons.map((button) => ({
+      left: percent(button, 'left'),
+      top: percent(button, 'top'),
+      right: percent(button, 'left') + percent(button, 'width'),
+      bottom: percent(button, 'top') + percent(button, 'height')
+    }));
+    for (const rect of rects) {
+      expect(rect.left).toBeGreaterThanOrEqual(10);
+      expect(rect.right).toBeLessThanOrEqual(90.001);
+      expect(rect.top).toBeGreaterThanOrEqual(25.5556);
+      // Above the status row, which starts at 93%.
+      expect(rect.bottom).toBeLessThanOrEqual(90.001);
+    }
+    rects.forEach((a, i) =>
+      rects.slice(i + 1).forEach((b) => {
+        const apart =
+          a.right <= b.left + 0.001 ||
+          b.right <= a.left + 0.001 ||
+          a.bottom <= b.top + 0.001 ||
+          b.bottom <= a.top + 0.001;
+        expect(apart).toBe(true);
+      })
+    );
+    // Labels shrink with the cells rather than spilling out of them.
+    const fontSize = Number.parseFloat(cssValue(buttons[0]!.children[1]!, 'font-size') ?? 'NaN');
+    expect(fontSize).toBeLessThan(3.8);
+    expect(fontSize).toBeGreaterThan(1.5);
+  });
+});
+
 describe('createAppShellLoadingPresenter', () => {
   it('shows app-provided loading artwork, label, and progress', () => {
     const document = fakeDocument();
