@@ -107,6 +107,7 @@ existing rendering while the mechanics move here:
 
 - `AppShellIcon` carries `filter`, `size`, and `fontSize`, so an app can recolour a monochrome source asset or keep a text glyph at its own size.
 - An application menu action accepts an absolute `position`, and `setActionState` can move it, so an app owns its menu layout instead of the default two-column flow.
+- The default layout is two columns of up to two rows for up to four actions. With more actions it adds columns and rows and shrinks the labels, so every action stays on the stage above the status row.
 - `AppShellApplicationMenuStatus.color` overrides the tone palette for an app-owned status row.
 - `closeIconMetrics` scales the built-in close glyph with the stage instead of the 20px default.
 - A source choice can set `align: 'center'` for a label-only button.

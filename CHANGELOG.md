@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Keep every application menu action on the stage. The default layout placed actions in two
+  columns 30% apart, so a fifth action already ran past the bottom and a ninth was out of reach
+  (the root clips its overflow). Up to four actions keep the layout they had; more actions get
+  three columns (four beyond twelve) in the band above the status row, with labels and icons
+  scaled to the cells. An action's own `position` still overrides its cell.
+
 ## 0.2.0
 
 - Add app-neutral title controls, application menu, loading presenter, and source chooser primitives.

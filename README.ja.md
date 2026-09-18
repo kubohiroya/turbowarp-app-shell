@@ -106,6 +106,7 @@ indicator.show({
 
 - `AppShellIcon` は `filter`、`size`、`fontSize` を持ちます。単色 source asset の recolour や、text glyph を app 独自のサイズで表示できます。
 - application menu の action は絶対 `position` を受け取り、`setActionState` で移動できます。標準の 2 列 layout ではなく app 側が menu layout を所有できます。
+- 標準の layout は、action が 4 つまでなら 2 列 2 行です。それより多いと列と行を増やして label を縮め、すべての action が status 行より上の stage 内に収まります。
 - `AppShellApplicationMenuStatus.color` は、app が所有する status 行の色を tone palette より優先します。
 - `closeIconMetrics` は、標準の 20px ではなく stage に追従する close glyph の寸法を指定します。
 - source choice は label だけの button 用に `align: 'center'` を指定できます。
