@@ -1,6 +1,6 @@
 {
   "name": "@kubohiroya/turbowarp-app-shell",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "App-neutral DOM shell primitives for TurboWarp applications.",
   "author": "Hiroya Kubo <hiroya@cuc.ac.jp>",
   "license": "MPL-2.0",
@@ -58,11 +58,5 @@
     "app-shell",
     "runtime",
     "dom"
-  ],
-  "gitHead": "e75acd2797d7ce4955f963680ee32c373d22500f",
-  "x-turbowarp-source": {
-    "revision": "e75acd2797d7ce4955f963680ee32c373d22500f",
-    "revisionRole": "base-commit",
-    "sourceState": "working-tree-release-overlay"
-  }
+  ]
 }
