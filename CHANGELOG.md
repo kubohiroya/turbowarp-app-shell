@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.3.0
+
+- 単独HTML用の共通操作Dockを追加。上下左右の配置、自動非表示、設定保存、タッチ・キーボード操作、全画面追随に対応する。
+- Document単位の共有とstageControls互換APIで、別々の拡張を同じDockへ登録できる。
+- npm trusted publishingを妨げるsetup-nodeのregistry認証設定を除去する。
+
 ## 0.2.1
 
 - Keep every application menu action on the stage. The default layout placed actions in two

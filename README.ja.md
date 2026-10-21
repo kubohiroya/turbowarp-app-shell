@@ -175,4 +175,4 @@ npm view @kubohiroya/turbowarp-app-shell versions
 
 Documentの共有キーを使うため、別々にバンドルされた拡張から呼んでもDockは一つです。同一ページで複数プレイヤーを置く場合は、ボタンIDを利用者ごとに名前空間化してください。EditorのafterStopButtonへ表示する場合はEditor側のAPIを優先し、このDockを作りません。
 
-このAPIは開発中です。利用側のローカル検証は作業worktreeをリンクして行っています。公開する際はapp-shellの新バージョンを公開してから、利用側の依存pin・lockfileを更新します。公開済み0.2.1は差し替えません。
+このAPIは0.3.0以降で利用できます。利用側では依存バージョンとlockfileを更新してください。
