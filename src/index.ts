@@ -1397,3 +1397,6 @@ export function createRuntimeMessageIndicator(options: RuntimeMessageIndicatorOp
     }
   });
 }
+
+export {createRuntimeControlsDock, getRuntimeControlsDock} from './runtime-controls-dock.js';
+export type {DockEdge, DockButtonOptions, DockButtonState, RuntimeStageControls} from './runtime-controls-dock.js';

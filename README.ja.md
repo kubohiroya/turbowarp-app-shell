@@ -163,3 +163,16 @@ npm publish --access public
 ```bash
 npm view @kubohiroya/turbowarp-app-shell versions
 ```
+
+
+## 単独HTMLの共通操作Dock
+
+`getRuntimeControlsDock({document, locale: 'ja'})`は、Editorの操作列がないHTMLプレイヤーに共通Dockを提供します。`stageControls.addButton({id, label, icon, onClick})`のhandleを`update({visible: true})`すると入口を表示します。登録直後は非表示です。
+
+初期値は下・自動非表示ON。設定から上下左右・自動非表示を変更でき、localStorageが使える環境では保持します。使えない場合も、そのページの中では動作します。ポインター・タッチ・キーボードで再表示し、ボタンの`expanded`がtrueの間は表示を維持します。
+
+`focus()`は操作後のフォーカスを戻し、`dispose()`はそのボタンを解除します。handleの任意の`placePanel(element)`は単独HTML用の設定パネルへ共通の見た目と配置を提供します。パネルはheader/body/footerの3要素を基本とします。外側host専用の`dock.placePanel(element)`は見た目を変えずに配置だけを行います。
+
+Documentの共有キーを使うため、別々にバンドルされた拡張から呼んでもDockは一つです。同一ページで複数プレイヤーを置く場合は、ボタンIDを利用者ごとに名前空間化してください。EditorのafterStopButtonへ表示する場合はEditor側のAPIを優先し、このDockを作りません。
+
+このAPIは開発中です。利用側のローカル検証は作業worktreeをリンクして行っています。公開する際はapp-shellの新バージョンを公開してから、利用側の依存pin・lockfileを更新します。公開済み0.2.1は差し替えません。
