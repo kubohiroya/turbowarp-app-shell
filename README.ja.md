@@ -1,6 +1,6 @@
 # turbowarp-app-shell
 
-[English](README.md)
+[English](README.md) | 日本語
 
 `@kubohiroya/turbowarp-app-shell` は、TurboWarp app 向けの app 非依存 DOM shell primitive を提供します。
 
