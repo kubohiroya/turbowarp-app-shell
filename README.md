@@ -1,6 +1,6 @@
 # turbowarp-app-shell
 
-[日本語](README.ja.md)
+English | [日本語](README.ja.md)
 
 `@kubohiroya/turbowarp-app-shell` provides app-neutral DOM shell primitives for TurboWarp applications.
 
