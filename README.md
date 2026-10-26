@@ -115,6 +115,7 @@ existing rendering while the mechanics move here:
 ## Development
 
 ```bash
+npm install --global corepack@latest
 corepack enable
 pnpm install --frozen-lockfile
 pnpm run check
