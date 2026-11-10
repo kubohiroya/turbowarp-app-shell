@@ -31,6 +31,7 @@ class FakeDocument extends EventTarget {
   defaultView = Object.assign(new EventTarget(), {innerWidth: 1280, innerHeight: 800, navigator: {language: 'ja'},
     localStorage: {getItem: (key: string) => this.storage.get(key), setItem: (key: string, value: string) => this.storage.set(key, value)}});
   createElement(tag: string) { return new FakeElement(this, tag); }
+  createElementNS(_ns: string, tag: string) { return new FakeElement(this, tag); }
 }
 const find = (root: FakeElement, name: string, value?: string): FakeElement | undefined =>
   root.attributes.has(name) && (value === undefined || root.attributes.get(name) === value) ? root :
@@ -96,5 +97,36 @@ describe('standalone controls Dock', () => {
     first.dispose(); expect(document.fullscreenElement.children).toHaveLength(0);
     expect(getRuntimeControlsDock({document: asDocument(document)})).not.toBe(first);
     getRuntimeControlsDock({document: asDocument(document)}).dispose();
+  });
+  it('follows the host theme with TurboWarp variables and a dark fallback', () => {
+    const document = new FakeDocument(); createRuntimeControlsDock({document: asDocument(document)});
+    const root = document.body.children[0]!;
+    const css = root.children.find(child => child.tagName === 'style')!.textContent;
+    for (const name of ['--color-scheme', '--ui-modal-background', '--ui-primary', '--ui-modal-foreground', '--text-primary',
+      '--ui-black-transparent', '--ui-secondary', '--ui-tertiary', '--input-background', '--popover-background',
+      '--looks-secondary', '--link-color']) expect(css).toContain(`var(${name}`);
+    expect(css).toMatch(/@media \(prefers-color-scheme: dark\) \{\[data-runtime-controls-dock\], \[data-runtime-dock-settings\], \[data-runtime-dock-panel\] \{[^}]*color-scheme:var\(--color-scheme,dark\)/u);
+    expect(css).toMatch(/^\[data-runtime-controls-dock\], \[data-runtime-dock-settings\], \[data-runtime-dock-panel\] \{color-scheme:var\(--color-scheme,light\)/u);
+    const rules = css.split('\n').filter(line => line.startsWith('[data-runtime-'));
+    expect(rules.length).toBeGreaterThan(10);
+    for (const rule of rules.slice(1)) expect(rule).not.toMatch(/#[0-9a-f]{3,8}\b/iu);
+    expect(css.match(/#fff\b/gu)?.length).toBe(1);
+  });
+  it('closes the settings dialog with an icon-only X button', () => {
+    const document = new FakeDocument(); const dock = createRuntimeControlsDock({document: asDocument(document)});
+    dock.stageControls.addButton({id: 'a', label: 'A', onClick() {}}).update({visible: true});
+    const root = document.body.children[0]!;
+    const settings = find(root, 'data-runtime-dock-settings')!;
+    const close = find(settings, 'data-runtime-dock-settings-close')!;
+    expect(close.parentNode?.attributes.has('data-runtime-dock-settings-header')).toBe(true);
+    expect(close.textContent).toBe('');
+    expect(close.attributes.get('aria-label')).toBe('閉じる');
+    expect((close as unknown as {title: string}).title).toBe('閉じる');
+    const svg = close.children[0]!;
+    expect(svg.tagName).toBe('svg'); expect(svg.attributes.get('viewBox')).toBe('0 0 16 16');
+    expect(svg.children[0]!.attributes.get('d')).toBe('M4 4l8 8M12 4l-8 8');
+    const gear = find(root, 'aria-label', 'Dockの設定')!; gear.click();
+    expect(settings.hidden).toBe(false); close.click();
+    expect(settings.hidden).toBe(true); expect(document.activeElement).toBe(gear);
   });
 });
