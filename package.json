@@ -1,6 +1,6 @@
 {
   "name": "@kubohiroya/turbowarp-app-shell",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "App-neutral DOM shell primitives for TurboWarp applications.",
   "author": {
     "name": "Hiroya Kubo",
